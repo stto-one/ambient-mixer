@@ -1,0 +1,1294 @@
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  background: #111;
+}
+
+/* =========================================================
+   APP LAYOUT
+   ========================================================= */
+
+.app-layout {
+  width: 100%;
+  min-height: 100vh;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* =========================================================
+   LEFT VISUAL PANEL
+   ========================================================= */
+
+.visual-panel {
+  position: relative;
+  min-height: 100vh;
+}
+
+.visual-overlay {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+
+  padding: 4rem;
+
+  color: white;
+}
+
+.visual-overlay h1 {
+  margin: 0;
+
+  font-size: clamp(2.5rem, 5vw, 5rem);
+}
+
+.visual-overlay p {
+  max-width: 28rem;
+
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+
+  font-size: 1.1rem;
+}
+
+/* =========================================================
+   GLOBAL CONTROLS
+   ========================================================= */
+
+.global-controls {
+  width: fit-content;
+  max-width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.75rem;
+
+  margin-top: 0.4rem;
+
+  overflow: visible;
+}
+
+/* Master volume slider */
+
+.global-volume-slider {
+  width: 180px;
+  flex-shrink: 0;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  background: transparent;
+
+  cursor: pointer;
+}
+
+/* Chrome / Edge / Safari */
+
+.global-volume-slider::-webkit-slider-runnable-track {
+  height: 2px;
+
+  background: rgba(255, 255, 255, 0.78);
+
+  border-radius: 999px;
+}
+
+.global-volume-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+
+  margin-top: -6px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* Firefox */
+
+.global-volume-slider::-moz-range-track {
+  height: 2px;
+
+  background: rgba(255, 255, 255, 0.78);
+
+  border-radius: 999px;
+}
+
+.global-volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* Global icon buttons */
+
+.control-icon-button {
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.95);
+
+  cursor: pointer;
+
+  transition:
+    color 150ms ease,
+    transform 150ms ease,
+    background 150ms ease;
+}
+
+.control-icon-button:hover {
+  color: white;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  transform: scale(1.08);
+}
+
+.control-icon-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   RIGHT MIXER PANEL
+   ========================================================= */
+
+.mixer-panel {
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 2rem;
+}
+
+.mixer-content {
+  width: min(100%, 650px);
+
+  padding: 1.5rem;
+
+  background: transparent;
+  border: none;
+
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* =========================================================
+   SOUND GRID
+   ========================================================= */
+
+.sound-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 1rem;
+}
+
+/* Invisible interaction container */
+
+.sound-card {
+  position: relative;
+
+  min-height: 105px;
+  padding: 1rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+
+  background: transparent;
+
+  box-shadow: none;
+
+  color: rgba(255, 255, 255, 0.95);
+
+  text-align: center;
+
+  cursor: pointer;
+  user-select: none;
+}
+
+.sound-card:hover {
+  background: transparent;
+}
+
+.sound-card.active {
+  background: transparent;
+
+  border: none;
+
+  box-shadow: none;
+
+  transform: none;
+}
+
+.sound-card:focus-visible {
+  outline: none;
+}
+
+/* =========================================================
+   SOUND ICON
+   ========================================================= */
+
+.sound-icon {
+  position: relative;
+
+  width: 54px;
+  height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  --sound-control-colour: rgba(40, 75, 90, 0.42);
+  --sound-control-colour-active: rgba(255, 255, 255, 0.34);
+
+  background: var(--sound-control-colour);
+
+  color: rgba(255, 255, 255, 0.95);
+
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+
+  transition:
+    background 200ms ease,
+    transform 200ms ease,
+    color 200ms ease;
+}
+
+.sound-card:hover .sound-icon {
+  background: rgba(40, 75, 90, 0.58);
+
+  transform: scale(1.05);
+}
+
+.sound-card.active .sound-icon {
+  background: var(--sound-control-colour-active);
+
+  color: white;
+
+  transform: scale(1.08);
+}
+
+.sound-card:focus-visible .sound-icon {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+/* Sound tooltip */
+
+.sound-icon::after {
+  content: attr(data-tooltip);
+
+  position: absolute;
+
+  left: 50%;
+  bottom: calc(100% + 10px);
+
+  transform: translateX(-50%) translateY(4px);
+
+  padding: 0.4rem 0.65rem;
+
+  border-radius: 8px;
+
+  background: rgba(20, 20, 20, 0.85);
+
+  color: white;
+
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+
+  pointer-events: none;
+
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
+
+  z-index: 10;
+}
+
+.sound-card:hover .sound-icon::after,
+.sound-card:focus-visible .sound-icon::after {
+  opacity: 1;
+  visibility: visible;
+
+  transform: translateX(-50%) translateY(0);
+}
+
+/* =========================================================
+   INDIVIDUAL SOUND VOLUME
+   ========================================================= */
+
+.volume-slider {
+  width: 100%;
+  max-width: 180px;
+
+  height: 28px;
+  max-height: 0;
+
+  margin-top: 0;
+
+  opacity: 0;
+  visibility: hidden;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition:
+    opacity 200ms ease,
+    margin-top 200ms ease,
+    max-height 200ms ease;
+}
+
+.sound-card.active .volume-slider {
+  max-height: 32px;
+
+  margin-top: 1.5rem;
+
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Chrome / Edge / Safari */
+
+.volume-slider::-webkit-slider-runnable-track {
+  height: 3px;
+
+  background: rgba(40, 75, 90, 0.55);
+
+  border-radius: 999px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+
+  margin-top: -5.5px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(40, 75, 90, 0.95);
+}
+
+/* Firefox */
+
+.volume-slider::-moz-range-track {
+  height: 3px;
+
+  background: rgba(40, 75, 90, 0.55);
+
+  border-radius: 999px;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(40, 75, 90, 0.95);
+}
+
+/* =========================================================
+   TIMER
+   ========================================================= */
+
+.timer {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+
+  overflow: visible;
+}
+
+/* Expandable timer controls */
+
+.timer-panel {
+  max-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  /*
+   * Keep controls clipped while collapsed.
+   */
+  overflow: hidden;
+
+  opacity: 0;
+  visibility: hidden;
+
+  transform: translateX(-6px);
+
+  transition:
+    max-width 250ms ease,
+    opacity 200ms ease,
+    transform 200ms ease,
+    visibility 200ms ease;
+}
+
+/* Expanded timer */
+
+.timer-panel.expanded {
+  max-width: 220px;
+
+  opacity: 1;
+  visibility: visible;
+
+  transform: translateX(0);
+
+  /*
+   * Essential for the preset dropdown.
+   * Allows it to extend outside the timer row.
+   */
+  overflow: visible;
+}
+
+/* Timer action buttons */
+
+.timer-icon-button {
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.95);
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease,
+    transform 150ms ease,
+    color 150ms ease;
+}
+
+.timer-icon-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+
+  color: white;
+
+  transform: scale(1.06);
+}
+
+.timer-icon-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   TIMER DURATION SELECTOR
+   ========================================================= */
+
+.timer-duration-selector {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: visible;
+}
+
+/* Clickable timer display */
+
+.timer-time-button {
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+  padding: 0.35rem 0.55rem;
+
+  border: none;
+  border-radius: 10px;
+
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.95);
+
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 500;
+
+  font-variant-numeric: tabular-nums;
+
+  line-height: 1;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.timer-time-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.timer-time-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.75);
+  outline-offset: 2px;
+}
+
+.timer-time-button:active {
+  transform: scale(0.97);
+}
+
+/* =========================================================
+   FOCUS PRESET MENU
+   ========================================================= */
+
+.focus-preset-menu {
+  position: absolute;
+
+  /* Open above the duration rather than below it */
+  bottom: calc(100% + 10px);
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  width: 220px;
+
+  padding: 0.4rem;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.15rem;
+
+  background: rgba(20, 25, 25, 0.82);
+
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.18);
+
+  z-index: 100;
+}
+
+/* Individual preset */
+
+.focus-preset-option {
+  width: 100%;
+
+  padding: 0.7rem 0.8rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  border: none;
+  border-radius: 10px;
+
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.82);
+
+  font: inherit;
+  font-size: 0.85rem;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.focus-preset-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+
+  color: white;
+}
+
+.focus-preset-option:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: -2px;
+}
+
+/* Selected preset */
+
+.focus-preset-option.selected {
+  background: rgba(255, 255, 255, 0.14);
+
+  color: white;
+}
+
+.focus-preset-label {
+  font-weight: 500;
+}
+
+.focus-preset-duration {
+  color: rgba(255, 255, 255, 0.58);
+
+  font-size: 0.78rem;
+
+  white-space: nowrap;
+}
+
+.focus-preset-option.selected .focus-preset-duration {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 800px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .visual-panel {
+    min-height: 35vh;
+  }
+
+  .visual-overlay {
+    padding: 2rem;
+  }
+
+  .global-controls {
+    width: fit-content;
+    max-width: 100%;
+
+    flex-wrap: wrap;
+
+    overflow: visible;
+  }
+
+  .mixer-panel {
+    min-height: auto;
+
+    padding: 1rem;
+  }
+
+  .mixer-content {
+    width: 100%;
+
+    padding: 1.25rem;
+  }
+
+  .sound-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 500px) {
+  .sound-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .global-volume-slider {
+    width: 150px;
+  }
+
+  .focus-preset-menu {
+    width: 200px;
+  }
+}
+
+/* =========================================================
+   TIMER PHASE + MENU SECTIONS
+   ========================================================= */
+
+.timer-phase-label {
+  margin-right: 0.4rem;
+
+  font-size: 0.72rem;
+  font-weight: 500;
+
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.timer-menu-heading {
+  padding: 0.45rem 0.8rem 0.3rem;
+
+  color: rgba(255, 255, 255, 0.55);
+
+  font-size: 0.68rem;
+  font-weight: 600;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  user-select: none;
+}
+
+.timer-menu-divider {
+  height: 1px;
+
+  margin: 0.35rem 0.5rem;
+
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* =========================================================
+   FOCUS SESSION CONTROLS
+   ========================================================= */
+
+.timer-session-progress {
+  margin-right: 0.45rem;
+
+  font-size: 0.72rem;
+  font-weight: 500;
+
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.session-preset-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 0.35rem;
+
+  padding: 0.25rem 0.65rem 0.55rem;
+}
+
+.session-preset-option {
+  border: 0;
+  border-radius: 7px;
+
+  padding: 0.4rem 0;
+
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+
+  font: inherit;
+  font-size: 0.8rem;
+
+  cursor: pointer;
+
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.session-preset-option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+
+  color: rgba(255, 255, 255, 1);
+}
+
+.session-preset-option.selected {
+  background: rgba(255, 255, 255, 0.16);
+
+  color: #fff;
+
+  font-weight: 600;
+}
+
+.session-preset-option:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   FOCUS VIEW
+   ========================================================= */
+
+.app-layout {
+  position: relative;
+}
+
+/*
+ * Keep the normal application mounted
+ * but visually remove it during Focus View.
+ */
+.app-layout.focus-view-active .visual-panel,
+.app-layout.focus-view-active .mixer-panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Full-screen visual layer */
+
+.focus-view {
+  position: absolute;
+  inset: 0;
+
+  min-height: 100vh;
+
+  z-index: 200;
+
+  pointer-events: none;
+}
+
+/*
+ * Minimal controls remain bottom-left,
+ * mirroring the normal app layout.
+ */
+.focus-view-controls {
+  position: absolute;
+
+  left: 4rem;
+  bottom: 4rem;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+
+  color: rgba(255, 255, 255, 0.95);
+
+  pointer-events: auto;
+}
+
+/* Focus View icon controls */
+
+.focus-view-icon-button {
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.95);
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.focus-view-icon-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+
+  color: white;
+
+  transform: scale(1.06);
+}
+
+.focus-view-icon-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+/* Hidden timer information */
+
+.focus-view-timer {
+  max-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  overflow: hidden;
+
+  opacity: 0;
+  visibility: hidden;
+
+  transform: translateX(-6px);
+
+  white-space: nowrap;
+
+  transition:
+    max-width 250ms ease,
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 180ms ease;
+}
+
+/* Revealed timer information */
+
+.focus-view-timer.visible {
+  max-width: 180px;
+
+  opacity: 1;
+  visibility: visible;
+
+  transform: translateX(0);
+}
+
+/* Session / break context */
+
+.focus-view-session,
+.focus-view-phase {
+  font-size: 0.72rem;
+  font-weight: 500;
+
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Main countdown */
+
+.focus-view-time {
+  font-size: 1rem;
+  font-weight: 500;
+
+  font-variant-numeric: tabular-nums;
+
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* =========================================================
+   FOCUS VIEW RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 800px) {
+  .focus-view-controls {
+    left: 2rem;
+    bottom: 2rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .focus-view-controls {
+    left: 1.5rem;
+    bottom: 1.5rem;
+  }
+}
+
+/* =========================================================
+   ADD SOUND TILE
+   ========================================================= */
+
+.add-sound-card {
+  min-height: 105px;
+  padding: 1rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.add-sound-icon {
+  width: 54px;
+  height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  color: rgba(255, 255, 255, 0.72);
+
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.add-sound-card:hover
+.add-sound-icon {
+  background: rgba(255, 255, 255, 0.18);
+
+  color: white;
+
+  transform: scale(1.05);
+}
+
+.add-sound-card:focus-visible {
+  outline: none;
+}
+
+.add-sound-card:focus-visible
+.add-sound-icon {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+
+/* =========================================================
+   SOUND LIBRARY
+   ========================================================= */
+
+.sound-library-backdrop {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2rem;
+
+  background: rgba(0, 0, 0, 0.28);
+
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+
+  z-index: 500;
+}
+
+.sound-library {
+  width: min(100%, 520px);
+  max-height: min(80vh, 680px);
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+
+  background: rgba(20, 25, 25, 0.88);
+
+  color: white;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.sound-library-header {
+  padding: 1.25rem 1.4rem;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sound-library-header h2 {
+  margin: 0;
+
+  font-size: 1.15rem;
+}
+
+.sound-library-header p {
+  margin:
+    0.3rem 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.58);
+
+  font-size: 0.82rem;
+}
+
+.sound-library-close {
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 7px;
+
+  background: transparent;
+
+  color:
+    rgba(255, 255, 255, 0.75);
+
+  cursor: pointer;
+}
+
+.sound-library-close:hover {
+  background:
+    rgba(255, 255, 255, 0.1);
+
+  color: white;
+}
+
+.sound-library-content {
+  padding: 1rem 1.4rem 1.4rem;
+
+  overflow-y: auto;
+}
+
+.sound-library-category
++ .sound-library-category {
+  margin-top: 1.3rem;
+}
+
+.sound-library-category h3 {
+  margin:
+    0 0 0.45rem;
+
+  color:
+    rgba(255, 255, 255, 0.5);
+
+  font-size: 0.67rem;
+  font-weight: 600;
+
+  letter-spacing: 0.09em;
+
+  text-transform: uppercase;
+}
+
+.sound-library-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.2rem;
+}
+
+.sound-library-item {
+  width: 100%;
+
+  padding:
+    0.65rem 0.75rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+
+  color:
+    rgba(255, 255, 255, 0.8);
+
+  font: inherit;
+  font-size: 0.86rem;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.sound-library-item:hover {
+  background:
+    rgba(255, 255, 255, 0.08);
+
+  color: white;
+}
+
+.sound-library-item.selected {
+  background:
+    rgba(255, 255, 255, 0.11);
+
+  color: white;
+}
+
+.sound-library-status {
+  width: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color:
+    rgba(255, 255, 255, 0.78);
+}
+
+.sound-library-add {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+@media (max-width: 600px) {
+  .sound-library-backdrop {
+    padding: 1rem;
+  }
+
+  .sound-library {
+    max-height: 85vh;
+  }
+}
