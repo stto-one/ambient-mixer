@@ -1,3 +1,7 @@
+import {
+  publicAsset,
+} from '../utils/publicAsset'
+
 export type SoundCategory =
   | 'nature'
   | 'places'
@@ -22,7 +26,7 @@ export const sounds: Sound[] = [
   {
     id: 'gentle-rain',
     name: 'Gentle Rain',
-    audioFile: '/audio/gentlerain.mp3',
+    audioFile: publicAsset('/audio/gentlerain.mp3'),
     icon: 'rain',
     category: 'nature',
     sourceType: 'audio',
@@ -31,7 +35,7 @@ export const sounds: Sound[] = [
   {
     id: 'tui',
     name: 'Tūī',
-    audioFile: '/audio/tui.mp3',
+    audioFile: publicAsset('/audio/tui.mp3'),
     icon: 'bird',
     category: 'nature',
     sourceType: 'audio',
@@ -40,7 +44,7 @@ export const sounds: Sound[] = [
   {
     id: 'nz-bellbird',
     name: 'NZ Bellbird',
-    audioFile: '/audio/nzbellbird.mp3',
+    audioFile: publicAsset('/audio/nzbellbird.mp3'),
     icon: 'bell',
     category: 'nature',
     sourceType: 'audio',
@@ -49,7 +53,7 @@ export const sounds: Sound[] = [
   {
     id: 'busy-street-cafe',
     name: 'Busy Street Café',
-    audioFile: '/audio/busystreetcafe.mp3',
+    audioFile: publicAsset('/audio/busystreetcafe.mp3'),
     icon: 'coffee',
     category: 'places',
     sourceType: 'audio',
@@ -58,7 +62,7 @@ export const sounds: Sound[] = [
   {
     id: 'restaurant',
     name: 'Restaurant',
-    audioFile: '/audio/restaurant.mp3',
+    audioFile: publicAsset('/audio/restaurant.mp3'),
     icon: 'utensils',
     category: 'places',
     sourceType: 'audio',
@@ -67,7 +71,7 @@ export const sounds: Sound[] = [
   {
     id: 'ocean-waves',
     name: 'Ocean Waves',
-    audioFile: '/audio/oceanwaves.mp3',
+    audioFile: publicAsset('/audio/oceanwaves.mp3'),
     icon: 'waves-horizontal',
     category: 'nature',
     sourceType: 'audio',
@@ -76,7 +80,7 @@ export const sounds: Sound[] = [
   {
     id: 'campfire',
     name: 'Campfire',
-    audioFile: '/audio/campfire.mp3',
+    audioFile: publicAsset('/audio/campfire.mp3'),
     icon: 'flame',
     category: 'comfort',
     sourceType: 'audio',
@@ -85,7 +89,7 @@ export const sounds: Sound[] = [
   {
     id: 'ambient',
     name: 'Ambient',
-    audioFile: '/audio/ambient.mp3',
+    audioFile: publicAsset('/audio/ambient.mp3'),
     icon: 'sprout',
     category: 'comfort',
     sourceType: 'audio',
@@ -94,7 +98,7 @@ export const sounds: Sound[] = [
   {
     id: 'underwater',
     name: 'Underwater',
-    audioFile: '/audio/underwater.mp3',
+    audioFile: publicAsset('/audio/underwater.mp3'),
     icon: 'fish-symbol',
     category: 'comfort',
     sourceType: 'audio',
@@ -103,7 +107,7 @@ export const sounds: Sound[] = [
   {
     id: 'thunderstorm',
     name: 'Thunderstorm',
-    audioFile: '/audio/thunderstorm.mp3',
+    audioFile: publicAsset('/audio/thunderstorm.mp3'),
     icon: 'cloud-lightning',
     category: 'nature',
     sourceType: 'audio',

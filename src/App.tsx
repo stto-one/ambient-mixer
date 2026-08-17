@@ -42,6 +42,10 @@ import type {
   NoiseType,
 } from './audio/noiseGenerator'
 
+import {
+  publicAsset,
+} from './utils/publicAsset'
+
 const DEFAULT_FOCUS_MINUTES = 25
 const DEFAULT_BREAK_MINUTES: number | null = null
 
@@ -50,21 +54,21 @@ const getBackgroundImage = () => {
 
   /* Morning: 6:00am–10:00am */
   if (hour >= 6 && hour < 10) {
-    return '/images/Riverbed.jpg'
+    return publicAsset('/images/Riverbed.jpg')
   }
 
   /* Midday: 10:00am–1:00pm */
   if (hour >= 10 && hour < 13) {
-    return '/images/Ocean.jpg'
+    return publicAsset('/images/Ocean.jpg')
   }
 
   /* Afternoon: 1:00pm–5:00pm */
   if (hour >= 13 && hour < 17) {
-    return '/images/Conservatory.jpg'
+    return publicAsset('/images/Conservatory.jpg')
   }
 
   /* Evening / Night */
-  return '/images/ResortNight.jpg'
+  return publicAsset('/images/ResortNight.jpg')
 }
 
 function App() {

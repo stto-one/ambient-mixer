@@ -1,5 +1,9 @@
 import type { TimerState } from '../timer/timer'
 
+import {
+  publicAsset,
+} from '../utils/publicAsset'
+
 export const COMPLETION_CUE_FADE_SECONDS = 5
 export const COMPLETION_CUE_TOTAL_SECONDS = 10
 export const COMPLETION_CUE_CANCEL_FADE_SECONDS = 0.25
@@ -20,7 +24,7 @@ export const shouldStartCompletionCue = (
 
 export const createCompletionCueController =
   (): CompletionCueController => {
-    const audio = new Audio('/audio/dreamy.mp3')
+    const audio = new Audio(publicAsset('/audio/dreamy.mp3'))
 
     let audioContext: AudioContext | null = null
     let sourceNode: MediaElementAudioSourceNode | null = null
