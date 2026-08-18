@@ -6,7 +6,7 @@ export type FocusPreset = {
 export const FOCUS_PRESETS: FocusPreset[] = [
   {
     label: 'Quick Focus',
-    minutes: 10/60,
+    minutes: 25,
   },
   {
     label: 'Focus',

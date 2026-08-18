@@ -10,7 +10,7 @@ export const BREAK_PRESETS: BreakPreset[] = [
   },
   {
     label: 'Quick Break',
-    minutes: 10/60,
+    minutes: 5,
   },
   {
     label: 'Break',

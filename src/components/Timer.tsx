@@ -99,14 +99,11 @@ function Timer({
 
   // Start the completion cue five seconds
   // before either focus or break completes.
-  useEffect(() => {
-    if (shouldStartCompletionCue(timer)) {
-      completionCueRef.current.start()
-    }
-  }, [
-    timer.remainingSeconds,
-    timer.isRunning,
-  ])
+useEffect(() => {
+  if (shouldStartCompletionCue(timer)) {
+    completionCueRef.current.start()
+  }
+}, [timer])
 
   // Move to the next phase/session
   // once the current countdown completes.
@@ -183,11 +180,14 @@ function Timer({
   }, [isPresetMenuOpen])
 
   // Stop completion audio if Timer is removed.
-  useEffect(() => {
-    return () => {
-      completionCueRef.current.cancel()
-    }
-  }, [])
+useEffect(() => {
+  const completionCue =
+    completionCueRef.current
+
+  return () => {
+    completionCue.cancel()
+  }
+}, [])
 
   const toggleTimerPanel = () => {
     setIsExpanded((current) => {
