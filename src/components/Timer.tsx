@@ -46,19 +46,27 @@ import {
   type FocusCycleState,
 } from '../focus/focusCycle'
 
+import {
+  telemetry,
+} from '../telemetry/telemetry'
+
 type TimerProps = {
   cycle: FocusCycleState
   setCycle: Dispatch<
     SetStateAction<FocusCycleState>
   >
+  selectedSoundIds: string[]
 }
 
 function Timer({
   cycle,
   setCycle,
+  selectedSoundIds,
 }: TimerProps) {
-  const [isExpanded, setIsExpanded] =
-    useState(false)
+  const [
+    isExpanded,
+    setIsExpanded,
+  ] = useState(false)
 
   const [
     isPresetMenuOpen,
@@ -70,43 +78,146 @@ function Timer({
   )
 
   const durationSelectorRef =
-    useRef<HTMLDivElement | null>(null)
+    useRef<HTMLDivElement | null>(
+      null
+    )
+
+  /*
+   * Tracks which focus session has
+   * already emitted a start event.
+   */
+  const activeFocusSessionRef =
+    useRef<number | null>(
+      null
+    )
+
+  /*
+   * Tracks whether the timer
+   * configuration was customised.
+   */
+  const hasCustomConfigurationRef =
+    useRef(false)
 
   const timer = cycle.timer
 
-  // Drive the current focus or break countdown.
+  const isBreak =
+    cycle.phase === 'break'
+
+  /*
+   * Drive the current focus or
+   * break countdown.
+   */
   useEffect(() => {
     if (!timer.isRunning) {
       return
     }
 
-    const interval = window.setInterval(() => {
-      setCycle((currentCycle) => ({
-        ...currentCycle,
-        timer: tickTimer(
-          currentCycle.timer
-        ),
-      }))
-    }, 1000)
+    const interval =
+      window.setInterval(
+        () => {
+          setCycle(
+            (currentCycle) => ({
+              ...currentCycle,
+
+              timer: tickTimer(
+                currentCycle.timer
+              ),
+            })
+          )
+        },
+        1000
+      )
 
     return () => {
-      window.clearInterval(interval)
+      window.clearInterval(
+        interval
+      )
     }
   }, [
     timer.isRunning,
     setCycle,
   ])
 
-  // Start the completion cue five seconds
-  // before either focus or break completes.
-useEffect(() => {
-  if (shouldStartCompletionCue(timer)) {
-    completionCueRef.current.start()
-  }
-}, [timer])
+  /*
+   * Record a newly started
+   * focus session.
+   *
+   * Pause/resume does not
+   * create another event.
+   */
+  useEffect(() => {
+    if (
+      cycle.phase !== 'focus' ||
+      !timer.isRunning
+    ) {
+      return
+    }
 
-  // Move to the next phase/session
-  // once the current countdown completes.
+    if (
+      activeFocusSessionRef.current ===
+      cycle.currentSession
+    ) {
+      return
+    }
+
+    activeFocusSessionRef.current =
+      cycle.currentSession
+
+    telemetry.track(
+      'focus_session_started',
+      {
+        focusMinutes:
+          cycle.focusDurationMinutes,
+
+        breakMinutes:
+          cycle.breakDurationMinutes ??
+          0,
+
+        sessionNumber:
+          cycle.currentSession,
+
+        totalSessions:
+          cycle.totalSessions,
+
+        selectedSoundIds,
+
+        selectedSoundCount:
+          selectedSoundIds.length,
+
+        usedCustomConfiguration:
+          hasCustomConfigurationRef.current,
+      }
+    )
+  }, [
+    cycle.phase,
+    cycle.currentSession,
+    cycle.focusDurationMinutes,
+    cycle.breakDurationMinutes,
+    cycle.totalSessions,
+    timer.isRunning,
+    selectedSoundIds,
+  ])
+
+  /*
+   * Start the completion cue
+   * five seconds before completion.
+   */
+  useEffect(() => {
+    if (
+      shouldStartCompletionCue(
+        timer
+      )
+    ) {
+      void completionCueRef.current
+        .start()
+    }
+  }, [timer])
+
+  /*
+   * Record focus completion,
+   * then move to the next
+   * phase or session.
+   */
   useEffect(() => {
     if (
       timer.remainingSeconds !== 0 ||
@@ -115,19 +226,56 @@ useEffect(() => {
       return
     }
 
-    setCycle((currentCycle) =>
-      transitionAfterCompletion(
-        currentCycle
+    if (
+      cycle.phase === 'focus' &&
+      activeFocusSessionRef.current ===
+        cycle.currentSession
+    ) {
+      telemetry.track(
+        'focus_session_completed',
+        {
+          focusMinutes:
+            cycle.focusDurationMinutes,
+
+          sessionNumber:
+            cycle.currentSession,
+
+          totalSessions:
+            cycle.totalSessions,
+
+          selectedSoundIds,
+
+          selectedSoundCount:
+            selectedSoundIds.length,
+        }
       )
+
+      activeFocusSessionRef.current =
+        null
+    }
+
+    setCycle(
+      (currentCycle) =>
+        transitionAfterCompletion(
+          currentCycle
+        )
     )
   }, [
     timer.remainingSeconds,
     timer.isRunning,
+    cycle.phase,
+    cycle.currentSession,
+    cycle.focusDurationMinutes,
+    cycle.totalSessions,
+    selectedSoundIds,
     setCycle,
   ])
 
-  // Close the settings menu when clicking
-  // outside it or pressing Escape.
+  /*
+   * Close settings when
+   * clicking outside or
+   * pressing Escape.
+   */
   useEffect(() => {
     if (!isPresetMenuOpen) {
       return
@@ -136,23 +284,29 @@ useEffect(() => {
     const handlePointerDown = (
       event: PointerEvent
     ) => {
-      const target = event.target as Node
+      const target =
+        event.target as Node
 
       if (
         durationSelectorRef.current &&
-        !durationSelectorRef.current.contains(
-          target
-        )
+        !durationSelectorRef.current
+          .contains(target)
       ) {
-        setIsPresetMenuOpen(false)
+        setIsPresetMenuOpen(
+          false
+        )
       }
     }
 
     const handleKeyDown = (
       event: KeyboardEvent
     ) => {
-      if (event.key === 'Escape') {
-        setIsPresetMenuOpen(false)
+      if (
+        event.key === 'Escape'
+      ) {
+        setIsPresetMenuOpen(
+          false
+        )
       }
     }
 
@@ -177,28 +331,40 @@ useEffect(() => {
         handleKeyDown
       )
     }
-  }, [isPresetMenuOpen])
+  }, [
+    isPresetMenuOpen,
+  ])
 
-  // Stop completion audio if Timer is removed.
-useEffect(() => {
-  const completionCue =
-    completionCueRef.current
+  /*
+   * Stop completion audio if
+   * Timer is removed.
+   */
+  useEffect(() => {
+    const completionCue =
+      completionCueRef.current
 
-  return () => {
-    completionCue.cancel()
-  }
-}, [])
+    return () => {
+      completionCue.cancel()
+    }
+  }, [])
 
   const toggleTimerPanel = () => {
-    setIsExpanded((current) => {
-      const nextExpandedState = !current
+    setIsExpanded(
+      (current) => {
+        const nextExpandedState =
+          !current
 
-      if (!nextExpandedState) {
-        setIsPresetMenuOpen(false)
+        if (
+          !nextExpandedState
+        ) {
+          setIsPresetMenuOpen(
+            false
+          )
+        }
+
+        return nextExpandedState
       }
-
-      return nextExpandedState
-    })
+    )
   }
 
   const togglePresetMenu = () => {
@@ -208,39 +374,57 @@ useEffect(() => {
   }
 
   const toggleTimer = () => {
-    setCycle((currentCycle) => {
-      const currentTimer =
-        currentCycle.timer
+    setCycle(
+      (currentCycle) => {
+        const currentTimer =
+          currentCycle.timer
 
-      if (currentTimer.isRunning) {
-        completionCueRef.current.cancel()
+        if (
+          currentTimer.isRunning
+        ) {
+          completionCueRef.current
+            .cancel()
+
+          return {
+            ...currentCycle,
+
+            timer: pauseTimer(
+              currentTimer
+            ),
+          }
+        }
 
         return {
           ...currentCycle,
-          timer: pauseTimer(
+
+          timer: startTimer(
             currentTimer
           ),
         }
       }
-
-      return {
-        ...currentCycle,
-        timer: startTimer(
-          currentTimer
-        ),
-      }
-    })
+    )
   }
 
   const handleReset = () => {
-    completionCueRef.current.cancel()
+    completionCueRef.current
+      .cancel()
 
-    setCycle((currentCycle) => ({
-      ...currentCycle,
-      timer: resetTimer(
-        currentCycle.timer
-      ),
-    }))
+    if (
+      cycle.phase === 'focus'
+    ) {
+      activeFocusSessionRef.current =
+        null
+    }
+
+    setCycle(
+      (currentCycle) => ({
+        ...currentCycle,
+
+        timer: resetTimer(
+          currentCycle.timer
+        ),
+      })
+    )
   }
 
   const handleFocusDurationChange = (
@@ -254,20 +438,29 @@ useEffect(() => {
       return
     }
 
-    completionCueRef.current.cancel()
+    completionCueRef.current
+      .cancel()
 
-    setCycle((currentCycle) =>
-      setFocusDuration(
-        currentCycle,
-        durationMinutes
-      )
+    hasCustomConfigurationRef.current =
+      true
+
+    activeFocusSessionRef.current =
+      null
+
+    setCycle(
+      (currentCycle) =>
+        setFocusDuration(
+          currentCycle,
+          durationMinutes
+        )
     )
 
     setIsPresetMenuOpen(false)
   }
 
   const handleBreakDurationChange = (
-    durationMinutes: number | null
+    durationMinutes:
+      number | null
   ) => {
     if (
       cycle.breakDurationMinutes ===
@@ -277,15 +470,22 @@ useEffect(() => {
       return
     }
 
-    if (cycle.phase === 'break') {
-      completionCueRef.current.cancel()
+    if (
+      cycle.phase === 'break'
+    ) {
+      completionCueRef.current
+        .cancel()
     }
 
-    setCycle((currentCycle) =>
-      setBreakDuration(
-        currentCycle,
-        durationMinutes
-      )
+    hasCustomConfigurationRef.current =
+      true
+
+    setCycle(
+      (currentCycle) =>
+        setBreakDuration(
+          currentCycle,
+          durationMinutes
+        )
     )
 
     setIsPresetMenuOpen(false)
@@ -302,11 +502,15 @@ useEffect(() => {
       return
     }
 
-    setCycle((currentCycle) =>
-      setTotalSessions(
-        currentCycle,
-        totalSessions
-      )
+    hasCustomConfigurationRef.current =
+      true
+
+    setCycle(
+      (currentCycle) =>
+        setTotalSessions(
+          currentCycle,
+          totalSessions
+        )
     )
 
     setIsPresetMenuOpen(false)
@@ -317,33 +521,40 @@ useEffect(() => {
   )
 
   const seconds =
-    timer.remainingSeconds % 60
+    timer.remainingSeconds %
+    60
 
   const formattedTime =
     `${minutes}:${seconds
       .toString()
       .padStart(2, '0')}`
 
-  const isBreak =
-    cycle.phase === 'break'
-
-  const timerButtonLabel = isExpanded
-    ? 'Hide timer'
-    : timer.isRunning
-      ? isBreak
-        ? 'Show running break timer'
-        : 'Show running focus timer'
-      : 'Show timer'
+  const timerButtonLabel =
+    isExpanded
+      ? 'Hide timer'
+      : timer.isRunning
+        ? isBreak
+          ? 'Show running break timer'
+          : 'Show running focus timer'
+        : 'Show timer'
 
   return (
     <div className="timer">
       <button
         type="button"
         className="control-icon-button"
-        onClick={toggleTimerPanel}
-        aria-label={timerButtonLabel}
-        aria-expanded={isExpanded}
-        title={timerButtonLabel}
+        onClick={
+          toggleTimerPanel
+        }
+        aria-label={
+          timerButtonLabel
+        }
+        aria-expanded={
+          isExpanded
+        }
+        title={
+          timerButtonLabel
+        }
       >
         {!isExpanded &&
         timer.isRunning ? (
@@ -359,16 +570,22 @@ useEffect(() => {
             ? 'expanded'
             : ''
         }`}
-        aria-hidden={!isExpanded}
+        aria-hidden={
+          !isExpanded
+        }
       >
         <div
           className="timer-duration-selector"
-          ref={durationSelectorRef}
+          ref={
+            durationSelectorRef
+          }
         >
           <button
             type="button"
             className="timer-time-button"
-            onClick={togglePresetMenu}
+            onClick={
+              togglePresetMenu
+            }
             aria-label={
               isBreak
                 ? `Change timer settings, break has ${formattedTime} remaining`
@@ -384,10 +601,16 @@ useEffect(() => {
                 Break
               </span>
             ) : (
-              cycle.totalSessions > 1 && (
+              cycle.totalSessions >
+                1 && (
                 <span className="timer-session-progress">
-                  {cycle.currentSession}/
-                  {cycle.totalSessions}
+                  {
+                    cycle.currentSession
+                  }
+                  /
+                  {
+                    cycle.totalSessions
+                  }
                 </span>
               )
             )}
@@ -407,43 +630,55 @@ useEffect(() => {
                 Focus
               </div>
 
-              {FOCUS_PRESETS.map(
-                (preset) => {
-                  const isSelected =
-                    cycle.focusDurationMinutes ===
-                    preset.minutes
+              <div
+                role="group"
+                aria-label="Focus duration"
+              >
+                {FOCUS_PRESETS.map(
+                  (preset) => {
+                    const isSelected =
+                      cycle
+                        .focusDurationMinutes ===
+                      preset.minutes
 
-                  return (
-                    <button
-                      key={preset.minutes}
-                      type="button"
-                      className={`focus-preset-option ${
-                        isSelected
-                          ? 'selected'
-                          : ''
-                      }`}
-                      onClick={() =>
-                        handleFocusDurationChange(
+                    return (
+                      <button
+                        key={
                           preset.minutes
-                        )
-                      }
-                      role="menuitemradio"
-                      aria-checked={
-                        isSelected
-                      }
-                    >
-                      <span className="focus-preset-label">
-                        {preset.label}
-                      </span>
+                        }
+                        type="button"
+                        className={`focus-preset-option ${
+                          isSelected
+                            ? 'selected'
+                            : ''
+                        }`}
+                        onClick={() =>
+                          handleFocusDurationChange(
+                            preset.minutes
+                          )
+                        }
+                        role="menuitemradio"
+                        aria-checked={
+                          isSelected
+                        }
+                      >
+                        <span className="focus-preset-label">
+                          {
+                            preset.label
+                          }
+                        </span>
 
-                      <span className="focus-preset-duration">
-                        {preset.minutes}{' '}
-                        min
-                      </span>
-                    </button>
-                  )
-                }
-              )}
+                        <span className="focus-preset-duration">
+                          {
+                            preset.minutes
+                          }{' '}
+                          min
+                        </span>
+                      </button>
+                    )
+                  }
+                )}
+              </div>
 
               <div
                 className="timer-menu-divider"
@@ -454,51 +689,59 @@ useEffect(() => {
                 Break
               </div>
 
-              {BREAK_PRESETS.map(
-                (preset) => {
-                  const isSelected =
-                    cycle.breakDurationMinutes ===
-                    preset.minutes
+              <div
+                role="group"
+                aria-label="Break duration"
+              >
+                {BREAK_PRESETS.map(
+                  (preset) => {
+                    const isSelected =
+                      cycle
+                        .breakDurationMinutes ===
+                      preset.minutes
 
-                  return (
-                    <button
-                      key={
-                        preset.minutes ??
-                        'none'
-                      }
-                      type="button"
-                      className={`focus-preset-option ${
-                        isSelected
-                          ? 'selected'
-                          : ''
-                      }`}
-                      onClick={() =>
-                        handleBreakDurationChange(
-                          preset.minutes
-                        )
-                      }
-                      role="menuitemradio"
-                      aria-checked={
-                        isSelected
-                      }
-                    >
-                      <span className="focus-preset-label">
-                        {preset.label}
-                      </span>
-
-                      {preset.minutes !==
-                        null && (
-                        <span className="focus-preset-duration">
-                          {
+                    return (
+                      <button
+                        key={
+                          preset.minutes ??
+                          'none'
+                        }
+                        type="button"
+                        className={`focus-preset-option ${
+                          isSelected
+                            ? 'selected'
+                            : ''
+                        }`}
+                        onClick={() =>
+                          handleBreakDurationChange(
                             preset.minutes
-                          }{' '}
-                          min
+                          )
+                        }
+                        role="menuitemradio"
+                        aria-checked={
+                          isSelected
+                        }
+                      >
+                        <span className="focus-preset-label">
+                          {
+                            preset.label
+                          }
                         </span>
-                      )}
-                    </button>
-                  )
-                }
-              )}
+
+                        {preset.minutes !==
+                          null && (
+                          <span className="focus-preset-duration">
+                            {
+                              preset.minutes
+                            }{' '}
+                            min
+                          </span>
+                        )}
+                      </button>
+                    )
+                  }
+                )}
+              </div>
 
               <div
                 className="timer-menu-divider"
@@ -515,7 +758,9 @@ useEffect(() => {
                 aria-label="Number of focus sessions"
               >
                 {SESSION_PRESETS.map(
-                  (sessionCount) => {
+                  (
+                    sessionCount
+                  ) => {
                     const isSelected =
                       cycle.totalSessions ===
                       sessionCount
@@ -526,7 +771,9 @@ useEffect(() => {
 
                     return (
                       <button
-                        key={sessionCount}
+                        key={
+                          sessionCount
+                        }
                         type="button"
                         className={`session-preset-option ${
                           isSelected
@@ -545,12 +792,15 @@ useEffect(() => {
                           isSelected
                         }
                         aria-label={
-                          sessionCount === 1
+                          sessionCount ===
+                          1
                             ? '1 focus session'
                             : `${sessionCount} focus sessions`
                         }
                       >
-                        {sessionCount}
+                        {
+                          sessionCount
+                        }
                       </button>
                     )
                   }
@@ -563,7 +813,9 @@ useEffect(() => {
         <button
           type="button"
           className="timer-icon-button"
-          onClick={toggleTimer}
+          onClick={
+            toggleTimer
+          }
           aria-label={
             timer.isRunning
               ? isBreak
@@ -589,7 +841,9 @@ useEffect(() => {
         <button
           type="button"
           className="timer-icon-button"
-          onClick={handleReset}
+          onClick={
+            handleReset
+          }
           aria-label={
             isBreak
               ? 'Reset break'

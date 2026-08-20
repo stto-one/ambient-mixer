@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
@@ -10,6 +11,7 @@ import SoundCard from './components/SoundCard'
 import Timer from './components/Timer'
 import FocusView from './components/FocusView'
 import SoundLibrary from './components/SoundLibrary'
+import NoiseSoundCard from './components/NoiseSoundCard'
 
 import {
   sounds,
@@ -36,8 +38,6 @@ import {
   VolumeX,
 } from 'lucide-react'
 
-import NoiseSoundCard from './components/NoiseSoundCard'
-
 import type {
   NoiseType,
 } from './audio/noiseGenerator'
@@ -46,29 +46,50 @@ import {
   publicAsset,
 } from './utils/publicAsset'
 
+import {
+  logger,
+} from './observability/logger'
+
+import {
+  readStorage,
+  writeStorage,
+} from './storage/storage'
+
+import {
+  registerGlobalErrorHandlers,
+} from './observability/globalErrors'
+
+import {
+  telemetry,
+} from './telemetry/telemetry'
+
 const DEFAULT_FOCUS_MINUTES = 25
 const DEFAULT_BREAK_MINUTES: number | null = null
 
 const getBackgroundImage = () => {
   const hour = new Date().getHours()
 
-  /* Morning: 6:00am–10:00am */
   if (hour >= 6 && hour < 10) {
-    return publicAsset('/images/Riverbed.jpg')
+    return publicAsset(
+      '/images/Riverbed.jpg'
+    )
   }
 
-  /* Midday: 10:00am–1:00pm */
   if (hour >= 10 && hour < 13) {
-    return publicAsset('/images/Ocean.jpg')
+    return publicAsset(
+      '/images/Ocean.jpg'
+    )
   }
 
-  /* Afternoon: 1:00pm–5:00pm */
   if (hour >= 13 && hour < 17) {
-    return publicAsset('/images/Conservatory.jpg')
+    return publicAsset(
+      '/images/Conservatory.jpg'
+    )
   }
 
-  /* Evening / Night */
-  return publicAsset('/images/ResortNight.jpg')
+  return publicAsset(
+    '/images/ResortNight.jpg'
+  )
 }
 
 function App() {
@@ -103,11 +124,14 @@ function App() {
     setSelectedSoundIds,
   ] = useState<string[]>(() =>
     parseStoredSoundIds(
-      localStorage.getItem(
+      readStorage(
         SOUND_SELECTION_STORAGE_KEY
       )
     )
   )
+
+  const initialSoundIdsRef =
+    useRef(selectedSoundIds)
 
   const [cycle, setCycle] =
     useState<FocusCycleState>(() =>
@@ -122,9 +146,24 @@ function App() {
     setBackgroundImage,
   ] = useState(getBackgroundImage)
 
-  /*
-   * Only render sounds selected by the user.
-   */
+  useEffect(() => {
+    logger.info('app_started')
+  }, [])
+
+  useEffect(() => {
+    return registerGlobalErrorHandlers()
+  }, [])
+
+  useEffect(() => {
+    telemetry.track(
+      'app_opened',
+      {
+        initialSoundIds:
+          initialSoundIdsRef.current,
+      }
+    )
+  }, [])
+
   const selectedSounds = useMemo(
     () =>
       sounds.filter(
@@ -136,11 +175,8 @@ function App() {
     [selectedSoundIds]
   )
 
-  /*
-   * Persist personalised mixer selection.
-   */
   useEffect(() => {
-    localStorage.setItem(
+    writeStorage(
       SOUND_SELECTION_STORAGE_KEY,
       JSON.stringify(
         selectedSoundIds
@@ -148,10 +184,6 @@ function App() {
     )
   }, [selectedSoundIds])
 
-  /*
-   * Keep background aligned with
-   * the current time of day.
-   */
   useEffect(() => {
     const updateBackgroundImage = () => {
       setBackgroundImage(
@@ -170,10 +202,6 @@ function App() {
     }
   }, [])
 
-  /*
-   * Keep fullscreen state aligned
-   * with the browser.
-   */
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(
@@ -227,12 +255,34 @@ function App() {
   const toggleSoundSelection = (
     soundId: string
   ) => {
+    const isCurrentlySelected =
+      selectedSoundIds.includes(
+        soundId
+      )
+
+    const nextSoundIds =
+      toggleSoundId(
+        selectedSoundIds,
+        soundId
+      )
+
     setSelectedSoundIds(
-      (currentIds) =>
-        toggleSoundId(
-          currentIds,
-          soundId
-        )
+      nextSoundIds
+    )
+
+    telemetry.track(
+      'soundscape_changed',
+      {
+        changeType:
+          isCurrentlySelected
+            ? 'sound_removed'
+            : 'sound_added',
+
+        soundId,
+
+        selectedSoundIds:
+          nextSoundIds,
+      }
     )
   }
 
@@ -249,9 +299,11 @@ function App() {
         .documentElement
         .requestFullscreen()
     } catch (error) {
-      console.error(
+      logger.error(
         'fullscreen_toggle_failed',
-        error
+        {
+          error,
+        }
       )
     }
   }
@@ -344,6 +396,9 @@ function App() {
             <Timer
               cycle={cycle}
               setCycle={setCycle}
+              selectedSoundIds={
+                selectedSoundIds
+              }
             />
 
             <button
@@ -384,62 +439,95 @@ function App() {
       <section className="mixer-panel">
         <div className="mixer-content">
           <div className="sound-grid">
-          {selectedSounds.map((sound) => {
-          if (sound.sourceType === 'noise') {
-            const noiseTypeMap: Record<string, NoiseType> = {
-              'brown-noise': 'brown',
-              'white-noise': 'white',
-              'pink-noise': 'pink',
-              'green-noise': 'green',
-            }
+            {selectedSounds.map(
+              (sound) => {
+                if (
+                  sound.sourceType ===
+                  'noise'
+                ) {
+                  const noiseTypeMap: Record<
+                    string,
+                    NoiseType
+                  > = {
+                    'brown-noise':
+                      'brown',
 
-            const noiseType =
-              noiseTypeMap[sound.id]
+                    'white-noise':
+                      'white',
 
-            if (!noiseType) {
-              console.warn(
-                'unsupported_noise_sound',
-                {
-                  id: sound.id,
-                  name: sound.name,
+                    'pink-noise':
+                      'pink',
+
+                    'green-noise':
+                      'green',
+                  }
+
+                  const noiseType =
+                    noiseTypeMap[
+                      sound.id
+                    ]
+
+                  if (!noiseType) {
+                    logger.warn(
+                      'unsupported_noise_sound',
+                      {
+                        soundId:
+                          sound.id,
+
+                        soundName:
+                          sound.name,
+                      }
+                    )
+
+                    return null
+                  }
+
+                  return (
+                    <NoiseSoundCard
+                      key={sound.id}
+                      soundId={sound.id}
+                      name={sound.name}
+                      icon={sound.icon}
+                      noiseType={
+                        noiseType
+                      }
+                      stopSignal={
+                        stopSignal
+                      }
+                      masterVolume={
+                        effectiveMasterVolume
+                      }
+                    />
+                  )
                 }
-              )
 
-              return null
-            }
-
-            return (
-              <NoiseSoundCard
-                key={sound.id}
-                name={sound.name}
-                icon={sound.icon}
-                noiseType={noiseType}
-                stopSignal={stopSignal}
-                masterVolume={
-                  effectiveMasterVolume
-                }
-              />
-            )
-          }
-
-          return (
-            <SoundCard
-              key={sound.id}
-              name={sound.name}
-              audioFile={sound.audioFile ?? ''}
-              icon={sound.icon}
-              stopSignal={stopSignal}
-              masterVolume={
-                effectiveMasterVolume
+                return (
+                  <SoundCard
+                    key={sound.id}
+                    soundId={sound.id}
+                    name={sound.name}
+                    audioFile={
+                      sound.audioFile ??
+                      ''
+                    }
+                    icon={sound.icon}
+                    stopSignal={
+                      stopSignal
+                    }
+                    masterVolume={
+                      effectiveMasterVolume
+                    }
+                  />
+                )
               }
-            />
-          )
-        })}
+            )}
 
             <button
               type="button"
               className="add-sound-card"
-              onClick={openSoundLibrary}
+              onClick={
+                openSoundLibrary
+              }
               aria-label="Add sounds"
               title="Add sounds"
             >

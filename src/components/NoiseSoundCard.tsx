@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -18,7 +19,17 @@ import type {
   NoiseType,
 } from '../audio/noiseGenerator'
 
+import {
+  logger,
+} from '../observability/logger'
+
+import {
+  telemetry,
+  type SoundStopReason,
+} from '../telemetry/telemetry'
+
 type NoiseSoundCardProps = {
+  soundId: string
   name: string
   icon: string
   noiseType: NoiseType
@@ -27,25 +38,86 @@ type NoiseSoundCardProps = {
 }
 
 function NoiseSoundCard({
+  soundId,
   name,
   icon,
   noiseType,
   stopSignal,
   masterVolume,
 }: NoiseSoundCardProps) {
-  const [
-    isPlaying,
-    setIsPlaying,
-  ] = useState(false)
+  const [isPlaying, setIsPlaying] =
+    useState(false)
 
-  const [
-    volume,
-    setVolume,
-  ] = useState(50)
+  const [volume, setVolume] =
+    useState(50)
 
   const controllerRef =
     useRef<NoiseController | null>(
       null
+    )
+
+  const playbackStartedAtRef =
+    useRef<number | null>(null)
+
+  const isPlayingRef =
+    useRef(false)
+
+  const updatePlayingState = (
+    nextIsPlaying: boolean
+  ) => {
+    isPlayingRef.current =
+      nextIsPlaying
+
+    setIsPlaying(
+      nextIsPlaying
+    )
+  }
+
+  const trackSoundStopped =
+    useCallback(
+      (
+        stopReason:
+          SoundStopReason
+      ) => {
+        const playbackStartedAt =
+          playbackStartedAtRef.current
+
+        if (
+          playbackStartedAt ===
+          null
+        ) {
+          return
+        }
+
+        const playDurationSeconds =
+          Math.max(
+            0,
+            Math.round(
+              (
+                performance.now() -
+                playbackStartedAt
+              ) / 1000
+            )
+          )
+
+        telemetry.track(
+          'sound_stopped',
+          {
+            soundId,
+            sourceType: 'noise',
+            noiseType,
+            stopReason,
+            playDurationSeconds,
+          }
+        )
+
+        playbackStartedAtRef.current =
+          null
+      },
+      [
+        soundId,
+        noiseType,
+      ]
     )
 
   /*
@@ -61,12 +133,27 @@ function NoiseSoundCard({
       controller
 
     return () => {
+      if (
+        isPlayingRef.current
+      ) {
+        trackSoundStopped(
+          'removed'
+        )
+      }
+
+      controller.stop()
       controller.dispose()
+
+      isPlayingRef.current =
+        false
 
       controllerRef.current =
         null
     }
-  }, [noiseType])
+  }, [
+    noiseType,
+    trackSoundStopped,
+  ])
 
   /*
    * Apply individual × master volume.
@@ -76,10 +163,9 @@ function NoiseSoundCard({
       (volume / 100) *
       (masterVolume / 100)
 
-    controllerRef.current
-      ?.setVolume(
-        effectiveVolume
-      )
+    controllerRef.current?.setVolume(
+      effectiveVolume
+    )
   }, [
     volume,
     masterVolume,
@@ -89,11 +175,25 @@ function NoiseSoundCard({
    * Respond to Clear All.
    */
   useEffect(() => {
-    controllerRef.current
-      ?.stop()
+    const controller =
+      controllerRef.current
 
-    setIsPlaying(false)
-  }, [stopSignal])
+    if (!controller) {
+      return
+    }
+
+    if (isPlayingRef.current) {
+      trackSoundStopped(
+        'clear_all'
+      )
+    }
+
+    controller.stop()
+    updatePlayingState(false)
+  }, [
+    stopSignal,
+    trackSoundStopped,
+  ])
 
   const toggleNoise = async () => {
     const controller =
@@ -103,19 +203,49 @@ function NoiseSoundCard({
       return
     }
 
-    if (isPlaying) {
+    /*
+     * User stops active noise.
+     */
+    if (isPlayingRef.current) {
       controller.stop()
-      setIsPlaying(false)
+
+      trackSoundStopped(
+        'user'
+      )
+
+      updatePlayingState(false)
+
       return
     }
 
+    /*
+     * Start generated noise.
+     */
     try {
       await controller.start()
-      setIsPlaying(true)
+
+      playbackStartedAtRef.current =
+        performance.now()
+
+      updatePlayingState(true)
+
+      telemetry.track(
+        'sound_started',
+        {
+          soundId,
+          sourceType: 'noise',
+          noiseType,
+        }
+      )
     } catch (error) {
-      console.error(
-        `Unable to play ${name}`,
-        error
+      logger.error(
+        'noise_playback_failed',
+        {
+          soundName: name,
+          noiseType,
+          sourceType: 'noise',
+          error,
+        }
       )
     }
   }
@@ -129,7 +259,6 @@ function NoiseSoundCard({
       event.key === ' '
     ) {
       event.preventDefault()
-
       void toggleNoise()
     }
   }
@@ -152,11 +281,12 @@ function NoiseSoundCard({
         )
 
       default:
-        console.warn(
+        logger.warn(
           'unsupported_noise_icon',
           {
-            sound: name,
+            soundName: name,
             icon: iconName,
+            noiseType,
           }
         )
 

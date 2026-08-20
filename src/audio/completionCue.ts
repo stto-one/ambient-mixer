@@ -4,6 +4,10 @@ import {
   publicAsset,
 } from '../utils/publicAsset'
 
+import {
+  logger,
+} from '../observability/logger'
+
 export const COMPLETION_CUE_FADE_SECONDS = 5
 export const COMPLETION_CUE_TOTAL_SECONDS = 10
 export const COMPLETION_CUE_CANCEL_FADE_SECONDS = 0.25
@@ -24,7 +28,9 @@ export const shouldStartCompletionCue = (
 
 export const createCompletionCueController =
   (): CompletionCueController => {
-    const audio = new Audio(publicAsset('/audio/dreamy.mp3'))
+    const audio = new Audio(
+      publicAsset('/audio/dreamy.mp3')
+    )
 
     let audioContext: AudioContext | null = null
     let sourceNode: MediaElementAudioSourceNode | null = null
@@ -34,20 +40,28 @@ export const createCompletionCueController =
     let isPlaying = false
 
     const initialiseAudioGraph = () => {
-      if (audioContext && sourceNode && gainNode) {
+      if (
+        audioContext &&
+        sourceNode &&
+        gainNode
+      ) {
         return
       }
 
       audioContext = new AudioContext()
 
       sourceNode =
-        audioContext.createMediaElementSource(audio)
+        audioContext.createMediaElementSource(
+          audio
+        )
 
       gainNode =
         audioContext.createGain()
 
       sourceNode.connect(gainNode)
-      gainNode.connect(audioContext.destination)
+      gainNode.connect(
+        audioContext.destination
+      )
     }
 
     const clearStopTimeout = () => {
@@ -73,21 +87,30 @@ export const createCompletionCueController =
 
       initialiseAudioGraph()
 
-      if (!audioContext || !gainNode) {
+      if (
+        !audioContext ||
+        !gainNode
+      ) {
         return
       }
 
       clearStopTimeout()
 
-      if (audioContext.state === 'suspended') {
+      if (
+        audioContext.state ===
+        'suspended'
+      ) {
         await audioContext.resume()
       }
 
       audio.currentTime = 0
 
-      const now = audioContext.currentTime
+      const now =
+        audioContext.currentTime
 
-      gainNode.gain.cancelScheduledValues(now)
+      gainNode.gain.cancelScheduledValues(
+        now
+      )
 
       gainNode.gain.setValueAtTime(
         0,
@@ -97,9 +120,12 @@ export const createCompletionCueController =
       try {
         await audio.play()
       } catch (error) {
-        console.error(
+        logger.error(
           'completion_cue_playback_failed',
-          error
+          {
+            sourceType: 'completionCue',
+            error,
+          }
         )
 
         stopAndReset()
@@ -130,7 +156,8 @@ export const createCompletionCueController =
 
       stopTimeout = window.setTimeout(
         stopAndReset,
-        COMPLETION_CUE_TOTAL_SECONDS * 1000
+        COMPLETION_CUE_TOTAL_SECONDS *
+          1000
       )
     }
 
@@ -146,9 +173,12 @@ export const createCompletionCueController =
         return
       }
 
-      const now = audioContext.currentTime
+      const now =
+        audioContext.currentTime
 
-      gainNode.gain.cancelAndHoldAtTime(now)
+      gainNode.gain.cancelAndHoldAtTime(
+        now
+      )
 
       gainNode.gain.linearRampToValueAtTime(
         0,

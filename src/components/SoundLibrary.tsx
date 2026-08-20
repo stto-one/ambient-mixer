@@ -84,18 +84,17 @@ function SoundLibrary({
   }
 
   return (
-    <div
-      className="sound-library-backdrop"
-      role="presentation"
-      onPointerDown={onClose}
+  <div
+    className="sound-library-backdrop"
+    role="presentation"
+    onPointerDown={onClose}
+  >
+    <section
+      className="sound-library"
+      role="region"
+      aria-label="Sound library"
+      onPointerDown={(event) => event.stopPropagation()}
     >
-      <section
-        className="sound-library"
-        aria-label="Sound library"
-        onPointerDown={(event) =>
-          event.stopPropagation()
-        }
-      >
         <header className="sound-library-header">
           <div>
             <h2>
